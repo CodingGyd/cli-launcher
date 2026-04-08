@@ -22,8 +22,8 @@ export const useConfigStore = create<ConfigState>()(
       addItem: () =>
         set((state) => ({
           items: [
-            ...state.items,
             { id: createId(), title: '', dir: '', command: 'claude' },
+            ...state.items,
           ],
         })),
 

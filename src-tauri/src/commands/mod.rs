@@ -81,6 +81,20 @@ pub fn read_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("读取文件失败: {}", e))
 }
 
+/// 创建指定目录（含父目录），已存在时返回 false
+#[tauri::command]
+pub fn create_dir(dir: String) -> Result<bool, String> {
+    let path = std::path::Path::new(&dir);
+    if dir.trim().is_empty() {
+        return Err("路径不能为空".into());
+    }
+    if path.exists() {
+        return Ok(false);
+    }
+    fs::create_dir_all(path).map_err(|e| format!("创建目录失败: {}", e))?;
+    Ok(true)
+}
+
 /// 获取当前程序所在目录的路径
 #[tauri::command]
 pub fn get_exe_dir() -> Result<String, String> {

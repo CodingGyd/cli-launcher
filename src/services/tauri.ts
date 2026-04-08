@@ -25,3 +25,8 @@ export async function readFile(path: string): Promise<string> {
 export async function getExeDir(): Promise<string> {
   return await invoke<string>('get_exe_dir')
 }
+
+/** 创建目录（含父目录），返回 true=新建成功，false=已存在，异常=路径非法等 */
+export async function createDir(dir: string): Promise<boolean> {
+  return await invoke<boolean>('create_dir', { dir })
+}

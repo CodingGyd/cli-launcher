@@ -1,4 +1,5 @@
 import { useConfigStore } from '@/stores/useConfigStore'
+import { useUiStore } from '@/stores/useUiStore'
 import { SortableItem } from './SortableItem'
 import {
   DndContext,
@@ -18,6 +19,15 @@ import { Terminal } from 'lucide-react'
 
 export function ConfigList() {
   const { items, removeItem, updateItem, reorderItems } = useConfigStore()
+  const searchQuery = useUiStore((s) => s.searchQuery).trim().toLowerCase()
+
+  const filteredItems = searchQuery
+    ? items.filter((i) =>
+        i.title.toLowerCase().includes(searchQuery) ||
+        i.dir.toLowerCase().includes(searchQuery) ||
+        i.command.toLowerCase().includes(searchQuery)
+      )
+    : items
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -38,6 +48,14 @@ export function ConfigList() {
     )
   }
 
+  if (filteredItems.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/60 gap-3">
+        <div className="text-sm">未找到匹配的配置</div>
+      </div>
+    )
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     if (over && active.id !== over.id) {
@@ -51,7 +69,7 @@ export function ConfigList() {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
+      <SortableContext items={filteredItems.map((i) => i.id)} strategy={rectSortingStrategy}>
         <div style={{
           flex: 1,
           overflow: 'auto',
@@ -62,12 +80,12 @@ export function ConfigList() {
           alignContent: 'start',
           background: 'var(--muted)',
         }}>
-          {items.map((item, index) => (
+          {filteredItems.map((item, index) => (
             <SortableItem
               key={item.id}
               item={item}
               index={index}
-              total={items.length}
+              total={filteredItems.length}
               onUpdate={updateItem}
               onRemove={removeItem}
             />

@@ -1,11 +1,17 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
 import type { ConfigItem as ConfigItemType } from '@/types'
-import { launchCmd } from '@/services/tauri'
+import { launchCmd, createDir } from '@/services/tauri'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Play, FolderOpen, Trash2, GripVertical, Check, Loader2 } from 'lucide-react'
+import { Play, FolderOpen, Trash2, GripVertical, Loader2, Check, FolderPlus } from 'lucide-react'
 
 const GRADIENTS = [
   'from-blue-500 to-cyan-400',
@@ -36,12 +42,19 @@ export function ConfigItemRow({
 }: Props) {
   const [launching, setLaunching] = useState(false)
   const [launched, setLaunched] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [created, setCreated] = useState(false)
+  const [dirExists, setDirExists] = useState(false)
   const gradient = GRADIENTS[index % GRADIENTS.length]
 
   const handleBrowse = async () => {
     try {
-      const selected = await open({ directory: true, multiple: false })
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: item.dir.trim() || undefined,
+      })
       if (selected && typeof selected === 'string') {
         onUpdate(item.id, 'dir', selected)
       }
@@ -64,14 +77,33 @@ export function ConfigItemRow({
     }
   }
 
-  const handleDelete = useCallback(() => {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      setTimeout(() => setConfirmDelete(false), 3000)
-      return
-    }
+  const handleDelete = () => {
+    setDeleteOpen(true)
+  }
+
+  const confirmDelete = () => {
     onRemove(item.id)
-  }, [confirmDelete, onRemove, item.id])
+    setDeleteOpen(false)
+  }
+
+  const handleCreateDir = async () => {
+    if (!item.dir.trim()) return
+    setCreating(true)
+    try {
+      const ok = await createDir(item.dir)
+      if (ok) {
+        setCreated(true)
+        setDirExists(false)
+        setTimeout(() => setCreated(false), 1500)
+      } else {
+        setDirExists(true)
+      }
+    } catch (e) {
+      window.alert(String(e))
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
     <div className="group relative rounded-xl border border-border/50 bg-card text-card-foreground transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/[0.04] dark:hover:shadow-black/20 overflow-hidden">
@@ -117,22 +149,40 @@ export function ConfigItemRow({
           )}
         </Button>
 
-        {/* 删除按钮 - 带二次确认 */}
+        {/* 删除按钮 */}
         <Button
           size="icon-sm"
           onClick={handleDelete}
-          className={`shrink-0 border-0 transition-all duration-200 ${
-            confirmDelete
-              ? 'bg-destructive text-white scale-110'
-              : 'bg-muted text-muted-foreground hover:bg-destructive hover:text-white'
-          }`}
+          className="shrink-0 border-0 bg-muted text-muted-foreground hover:bg-destructive hover:text-white transition-colors"
         >
-          {confirmDelete ? (
-            <Check className="size-3.5" />
-          ) : (
-            <Trash2 className="size-3.5" />
-          )}
+          <Trash2 className="size-3.5" />
         </Button>
+
+        {/* 删除确认弹框 */}
+        {deleteOpen && (
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <DialogContent showCloseButton={false} style={{ maxWidth: 360, padding: 0, gap: 0 }}>
+              <div style={{ padding: '24px 28px 20px' }}>
+                <DialogTitle style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>确认删除</DialogTitle>
+                <DialogDescription style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5 }}>
+                  确定要删除「{item.title || '未命名配置'}」吗？此操作不可撤销。
+                </DialogDescription>
+              </div>
+              <div className="flex justify-end gap-2" style={{ padding: '12px 28px 20px' }}>
+                <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(false)}>
+                  取消
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={confirmDelete}
+                >
+                  删除
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* 字段区域 */}
@@ -153,6 +203,33 @@ export function ConfigItemRow({
               <FolderOpen className="size-3" />
               浏览
             </Button>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!item.dir.trim() || creating}
+                  onClick={handleCreateDir}
+                  className={`shrink-0 gap-1.5 px-3 border-0 transition-all duration-300 ${
+                    created
+                      ? 'bg-emerald-500 text-white border-emerald-500'
+                      : ''
+                  }`}
+                >
+                  {creating ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : created ? (
+                    <Check className="size-3" />
+                  ) : (
+                    <FolderPlus className="size-3" />
+                  )}
+                  新建
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {created ? '已新建' : dirExists ? '目录已存在，无需重复新建' : '新建文件夹'}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
