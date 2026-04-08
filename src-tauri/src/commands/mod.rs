@@ -1,6 +1,7 @@
 //! Tauri 命令处理 - 打开 cmd 窗口
 
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::os::windows::process::CommandExt;
 use std::process::Command;
 
@@ -63,4 +64,29 @@ pub fn launch_all(items: Vec<ConfigItem>) -> Result<(), String> {
             .map_err(|e| format!("启动 cmd 失败 ({}): {}", item.dir, e))?;
     }
     Ok(())
+}
+
+/// 将文本内容写入指定路径的文件（自动创建父目录）
+#[tauri::command]
+pub fn write_file(path: String, content: String) -> Result<(), String> {
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("创建目录失败: {}", e))?;
+    }
+    fs::write(&path, content).map_err(|e| format!("写入文件失败: {}", e))
+}
+
+/// 从指定路径读取文本文件内容
+#[tauri::command]
+pub fn read_file(path: String) -> Result<String, String> {
+    fs::read_to_string(&path).map_err(|e| format!("读取文件失败: {}", e))
+}
+
+/// 获取当前程序所在目录的路径
+#[tauri::command]
+pub fn get_exe_dir() -> Result<String, String> {
+    let exe = std::env::current_exe().map_err(|e| format!("获取程序路径失败: {}", e))?;
+    let dir = exe
+        .parent()
+        .ok_or("无法获取程序目录")?;
+    Ok(dir.to_string_lossy().to_string())
 }

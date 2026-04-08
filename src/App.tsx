@@ -4,6 +4,7 @@ import { ConfigList } from '@/components/ConfigList'
 import { Footer } from '@/components/Footer'
 import { useThemeStore } from '@/stores/useThemeStore'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { initFileSync } from '@/services/fileSync'
 import '@/index.css'
 
 export default function App() {
@@ -12,6 +13,10 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  useEffect(() => {
+    initFileSync()
+  }, [])
 
   return (
     <TooltipProvider>

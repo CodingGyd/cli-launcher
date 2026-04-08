@@ -9,6 +9,7 @@ interface ConfigState {
   updateItem: (id: string, field: keyof Omit<ConfigItem, 'id'>, value: string) => void
   moveItem: (fromIndex: number, toIndex: number) => void
   reorderItems: (activeId: string, overId: string) => void
+  setItems: (items: ConfigItem[]) => void
 }
 
 const createId = () => crypto.randomUUID()
@@ -56,6 +57,8 @@ export const useConfigStore = create<ConfigState>()(
           newItems.splice(newIndex, 0, removed)
           return { items: newItems }
         }),
+
+      setItems: (items) => set({ items }),
     }),
     {
       name: 'cli-launcher-config',

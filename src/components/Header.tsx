@@ -1,12 +1,15 @@
-import { useThemeStore } from '@/stores/useThemeStore'
+import { useState } from 'react'
 import { useConfigStore } from '@/stores/useConfigStore'
-import { launchAll } from '@/services/tauri'
+import { launchAll, writeFile } from '@/services/tauri'
 import { Button } from '@/components/ui/button'
-import { Plus, Rocket, Moon, Sun } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Plus, Rocket, Download, Settings } from 'lucide-react'
+import { save } from '@tauri-apps/plugin-dialog'
+import { SettingsDialog } from '@/components/SettingsDialog'
 
 export function Header() {
-  const { theme, toggleTheme } = useThemeStore()
   const { items, addItem } = useConfigStore()
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const handleLaunchAll = async () => {
     const validItems = items.filter((item) => item.dir.trim() !== '')
@@ -15,6 +18,21 @@ export function Header() {
       await launchAll(validItems)
     } catch (e) {
       console.error('批量启动失败:', e)
+    }
+  }
+
+  const handleExport = async () => {
+    if (items.length === 0) return
+    try {
+      const path = await save({
+        defaultPath: 'clilauncher-config.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      })
+      if (!path) return
+      const exportData = items.map(({ title, dir, command }) => ({ title, dir, command }))
+      await writeFile(path, JSON.stringify(exportData, null, 2))
+    } catch (e) {
+      console.error('导出失败:', e)
     }
   }
 
@@ -29,25 +47,55 @@ export function Header() {
         CliLauncher
       </h1>
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="default" onClick={addItem} className="gap-1.5">
-          <Plus className="size-3.5" />
-          添加
-        </Button>
+      <div className="flex items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="outline" size="icon-sm" onClick={addItem}>
+              <Plus className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>添加配置</TooltipContent>
+        </Tooltip>
 
-        <Button
-          size="default"
-          disabled={!hasValid}
-          onClick={handleLaunchAll}
-          className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-        >
-          <Rocket className="size-3.5" />
-          全部启动
-        </Button>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              disabled={items.length === 0}
+              onClick={handleExport}
+            >
+              <Download className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>导出配置</TooltipContent>
+        </Tooltip>
 
-        <Button variant="ghost" size="icon-sm" onClick={toggleTheme}>
-          {theme === 'light' ? <Moon className="size-4" /> : <Sun className="size-4" />}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              disabled={!hasValid}
+              onClick={handleLaunchAll}
+              className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950 dark:hover:border-emerald-700"
+            >
+              <Rocket className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>全部启动</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger>
+            <Button variant="ghost" size="icon-sm" onClick={() => setSettingsOpen(true)}>
+              <Settings className="size-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>设置</TooltipContent>
+        </Tooltip>
+
+        {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />}
       </div>
     </header>
   )
