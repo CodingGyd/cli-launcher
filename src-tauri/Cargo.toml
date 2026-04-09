@@ -2,8 +2,8 @@
 name = "cli-launcher"
 version = "1.0.0"
 description = "CliLauncher - 命令行窗口唤醒助手"
-authors = ["you"]
-license = ""
+authors = ["CodingGyd"]
+license = "MIT"
 edition = "2021"
 rust-version = "1.77.2"
 
