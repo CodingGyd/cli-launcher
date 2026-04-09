@@ -24,6 +24,7 @@ pub fn run() {
             commands::read_file,
             commands::get_exe_dir,
             commands::create_dir,
+            commands::open_folder,
         ])
         .on_window_event(|window, event| {
             // 关闭窗口时隐藏到托盘而非退出

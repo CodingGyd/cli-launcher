@@ -30,3 +30,8 @@ export async function getExeDir(): Promise<string> {
 export async function createDir(dir: string): Promise<boolean> {
   return await invoke<boolean>('create_dir', { dir })
 }
+
+/** 用资源管理器打开文件夹 */
+export async function openFolder(dir: string): Promise<void> {
+  await invoke('open_folder', { dir })
+}

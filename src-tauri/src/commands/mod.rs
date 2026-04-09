@@ -95,6 +95,20 @@ pub fn create_dir(dir: String) -> Result<bool, String> {
     Ok(true)
 }
 
+/// 用资源管理器打开指定文件夹
+#[tauri::command]
+pub fn open_folder(dir: String) -> Result<(), String> {
+    if dir.trim().is_empty() {
+        return Err("路径不能为空".into());
+    }
+    Command::new("explorer")
+        .raw_arg(&dir)
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+        .map_err(|e| format!("打开文件夹失败: {}", e))?;
+    Ok(())
+}
+
 /// 获取当前程序所在目录的路径
 #[tauri::command]
 pub fn get_exe_dir() -> Result<String, String> {

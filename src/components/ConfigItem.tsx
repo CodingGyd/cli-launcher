@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { open } from '@tauri-apps/plugin-dialog'
 import type { ConfigItem as ConfigItemType } from '@/types'
-import { launchCmd, createDir } from '@/services/tauri'
+import { launchCmd, createDir, openFolder } from '@/services/tauri'
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Play, FolderOpen, Trash2, GripVertical, Loader2, Check, FolderPlus } from 'lucide-react'
+import { Play, FolderOpen, Trash2, GripVertical, Loader2, Check, FolderPlus, ExternalLink } from 'lucide-react'
 
 const GRADIENTS = [
   'from-blue-500 to-cyan-400',
@@ -102,6 +102,15 @@ export function ConfigItemRow({
       window.alert(String(e))
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleOpenFolder = async () => {
+    if (!item.dir.trim()) return
+    try {
+      await openFolder(item.dir)
+    } catch (e) {
+      console.error('打开文件夹失败:', e)
     }
   }
 
@@ -202,6 +211,16 @@ export function ConfigItemRow({
             <Button variant="outline" size="sm" onClick={handleBrowse} className="shrink-0 gap-1.5 px-3">
               <FolderOpen className="size-3" />
               浏览
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!item.dir.trim()}
+              onClick={handleOpenFolder}
+              className="shrink-0 gap-1.5 px-3"
+            >
+              <ExternalLink className="size-3" />
+              打开
             </Button>
             <Tooltip>
               <TooltipTrigger>
